@@ -1,6 +1,12 @@
 root: ./disks
 disks:
-  2004-10-chip-toys: main.swf
-  2005-10-chip-toys:
+  2004-10-chip-toys:
     swf: main.swf
     player: small
+  2009-10-digit:
+    kind: swfkit
+    swf: main.swf
+    exe: Digit.exe
+    flashvars:
+      userName: nine
+      appDir: ""

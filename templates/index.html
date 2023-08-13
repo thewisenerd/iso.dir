@@ -47,7 +47,10 @@
         player.style.height = "{{ height }}px";
         const container = document.getElementById("swf-container");
         container.appendChild(player);
-        player.load("{{ swf }}");
+        player.load({
+            url: "{{ swf }}",
+            parameters: {{ flashvars | tojson }},
+        });
     });
 </script>
 <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>

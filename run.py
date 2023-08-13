@@ -1,4 +1,5 @@
 import base64
+import json
 import os.path
 import typing
 from dataclasses import dataclass
@@ -8,19 +9,22 @@ import flask
 import yaml
 from flask import Flask, render_template
 
-from lib.iso_http import IsoHttpHandler
+from lib.http import HttpHandler
+from lib.http.iso import IsoHttpHandler
+from lib.http.swfkit import SwfKitHttpHandler
 
 
 @dataclass
 class HttpHandler:
     prefix: str
-    iso_http: IsoHttpHandler
+    http: HttpHandler
     swf: str
     player_width: int
     player_height: int
+    flashvars: dict[str, str]
 
     def close(self):
-        self.iso_http.close()
+        self.http.close()
 
 
 app: Flask = Flask(__name__)
@@ -46,20 +50,36 @@ def cfg_create_handler(prefix: str, config: typing.Union[str, dict]) -> HttpHand
             'swf': config,
         }
 
+    config = config | {
+        'kind': config.get('kind', 'iso'),
+        'player': config.get('player', 'medium'),
+        'flashvars': config.get('flashvars', {}),
+    }
+
     width = 1024
     height = 768
 
-    player = config.get('player', 'medium')
+    player = config['player']
     if player == 'small':
         width = 800
         height = 600
 
+    kind = config['kind']
+    handler: HttpHandler
+    if kind == 'iso':
+        handler = IsoHttpHandler(prefix)
+    elif kind == 'swfkit':
+        handler = SwfKitHttpHandler(prefix, config['exe'])
+    else:
+        raise ValueError(f'unknown handler kind {kind}')
+
     return HttpHandler(
         prefix=prefix,
-        iso_http=IsoHttpHandler(prefix),
+        http=handler,
         swf=config['swf'],
         player_width=width,
-        player_height=height
+        player_height=height,
+        flashvars=config['flashvars']
     )
 
 
@@ -100,7 +120,10 @@ def get_prefix(prefix: str):
                            title=prefix,
                            swf=handler.swf,
                            width=handler.player_width,
-                           height=handler.player_height)
+                           height=handler.player_height,
+                           flashvars=handler.flashvars,
+                           template_settings={'filters': {'tojson': json.dumps}}
+                           )
 
 
 @app.route('/<string:prefix>/<path:path>')
@@ -112,11 +135,11 @@ def get_prefix_file(prefix: str, path: str):
         path = '/' + path
 
     handler = _handlers[prefix]
-    if not handler.iso_http.exists(path):
+    if not handler.http.exists(path):
         return flask.Response(status=404)
 
-    sz = handler.iso_http.file_sz(path)
-    checksum = handler.iso_http.checksum(path)
+    sz = handler.http.file_sz(path)
+    checksum = handler.http.checksum(path)
 
     headers = {
         'Content-Type': 'application/octet-stream',
@@ -128,7 +151,7 @@ def get_prefix_file(prefix: str, path: str):
         headers['Content-Digest'] = 'sha-256=:' + base64.b64encode(checksum).strip().decode('utf-8')
 
     def generate():
-        for chunk in handler.iso_http.read_bytes(path):
+        for chunk in handler.http.read_bytes(path):
             yield chunk
 
     return generate(), 200, headers

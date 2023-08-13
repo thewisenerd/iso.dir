@@ -2,10 +2,11 @@ import hashlib
 import os
 import typing
 
-from .iso import IsoBase
+from . import HttpHandler
+from ..iso import IsoBase
 
 
-class IsoHttpHandler:
+class IsoHttpHandler(HttpHandler):
     def __init__(self, prefix: str):
         if not os.path.isdir(prefix):
             raise ValueError(f'prefix {prefix} is not a directory')
