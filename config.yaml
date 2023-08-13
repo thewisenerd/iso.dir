@@ -1,0 +1,3 @@
+root: ./disks
+disks:
+  2004-10-chip-toys: main.swf
