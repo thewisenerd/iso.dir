@@ -1,3 +1,6 @@
 root: ./disks
 disks:
   2004-10-chip-toys: main.swf
+  2005-10-chip-toys:
+    swf: main.swf
+    player: small

@@ -16,6 +16,8 @@ class HttpHandler:
     prefix: str
     iso_http: IsoHttpHandler
     swf: str
+    player_width: int
+    player_height: int
 
     def close(self):
         self.iso_http.close()
@@ -39,13 +41,25 @@ def cfg_load() -> dict:
 
 
 def cfg_create_handler(prefix: str, config: typing.Union[str, dict]) -> HttpHandler:
-    if type(config) != str:
-        raise ValueError(f'config for prefix {prefix} is not a string')
+    if type(config) == str:
+        config = {
+            'swf': config,
+        }
+
+    width = 1024
+    height = 768
+
+    player = config.get('player', 'medium')
+    if player == 'small':
+        width = 800
+        height = 600
 
     return HttpHandler(
         prefix=prefix,
         iso_http=IsoHttpHandler(prefix),
-        swf=config
+        swf=config['swf'],
+        player_width=width,
+        player_height=height
     )
 
 
@@ -70,6 +84,11 @@ def reload():
     return 'OK'
 
 
+@app.route('/')
+def get_root():
+    return render_template('list.html', paths=_handlers.keys())
+
+
 @app.route('/<string:prefix>/')
 def get_prefix(prefix: str):
     if prefix not in _handlers:
@@ -77,8 +96,11 @@ def get_prefix(prefix: str):
 
     handler = _handlers[prefix]
 
-    return render_template('index.html', title=prefix, swf=handler.swf)
-    return f'OK, {handler.prefix}, {handler.swf}'
+    return render_template('index.html',
+                           title=prefix,
+                           swf=handler.swf,
+                           width=handler.player_width,
+                           height=handler.player_height)
 
 
 @app.route('/<string:prefix>/<path:path>')

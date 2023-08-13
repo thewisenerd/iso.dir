@@ -20,8 +20,8 @@
         }
 
         #swf-container {
-            width: 800px;
-            height: 600px;
+            width: "{{ width }}px";
+            height: "{{ height }}px";
         }
     </style>
 </head>
@@ -43,8 +43,8 @@
             autoplay: 'on',
             unmuteOverlay: 'hidden',
         }
-        player.style.width = "800px";
-        player.style.height = "600px";
+        player.style.width = "{{ width }}px";
+        player.style.height = "{{ height }}px";
         const container = document.getElementById("swf-container");
         container.appendChild(player);
         player.load("{{ swf }}");
