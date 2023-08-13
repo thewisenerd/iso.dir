@@ -8,6 +8,7 @@ from datetime import datetime
 import flask
 import yaml
 from flask import Flask, render_template
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from lib.http import HttpHandler
 from lib.http.iso import IsoHttpHandler
@@ -165,3 +166,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+else:
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=2, x_host=2, x_prefix=2)
+    _root = cfg_setup_routes(cfg_load())
